@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — which pre-token protocol is worth farming next</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"><span class="ping"></span></div>
+    <div>
+      <h1>Token Radar</h1>
+      <p class="tagline">Which pre-token protocol is worth farming next — and what to do about it.</p>
+    </div>
+  </div>
+  <p class="meta" id="meta-line">Loading the snapshot…</p>
+</header>
+
+<main>
+  <section class="stats" id="stats" aria-label="Snapshot summary"></section>
+
+  <section class="panel model">
+    <h2>How the value is worked out</h2>
+    <p class="formula" id="model-formula"></p>
+    <ul class="factors">
+      <li><strong>Size multiple.</strong> A token is worth a multiple of the TVL it secures, and the multiple falls as TVL grows — a small protocol's token has more headroom than a giant's. At $100M of TVL the multiple is 0.42; at $10B it is about 0.27.</li>
+      <li><strong>Growth.</strong> The 7-day TVL change, clamped to −50%…+150%, feeds in at 70% of its size. A protocol growing fast is worth more than one the same size that is shrinking.</li>
+      <li><strong>Maturity.</strong> A protocol that has run for years with no token is more likely to launch a valuable one than one listed last week. The factor rises from 0.55 to 1.00 over four years with no token.</li>
+      <li><strong>Chain breadth.</strong> Each extra chain adds 3%, up to five extra chains. A protocol on more chains reaches more users.</li>
+    </ul>
+    <p class="honest">An implied value is a model, not a price. It says what a token <em>could</em> be worth from the snapshot's own figures — TVL, growth, age with no token, chains — not what it will be. A protocol with no token recorded is not proof it will ever launch one.</p>
+    <details class="sandbox">
+      <summary>Try the model yourself — change a constant and re-rank the board</summary>
+      <div class="sandbox-grid">
+        <label>Base multiple <input id="sb-base" type="number" step="0.01" min="0.05" max="1"></label>
+        <label>Size exponent <input id="sb-exp" type="number" step="0.01" min="-0.5" max="0"></label>
+        <label>Growth weight <input id="sb-growth" type="number" step="0.05" min="0" max="1.5"></label>
+        <label>Maturity base <input id="sb-maturity" type="number" step="0.05" min="0" max="1"></label>
+        <label>Chain step <input id="sb-chain" type="number" step="0.01" min="0" max="0.1"></label>
+        <div class="sandbox-actions">
+          <button id="sb-apply" type="button">Re-rank with these</button>
+          <button id="sb-reset" type="button" class="ghost">Reset to radar-2</button>
+        </div>
+      </div>
+      <p class="sandbox-note" id="sb-note"></p>
+    </details>
+  </section>
+
+  <section class="panel controls" aria-label="Board controls">
+    <div class="controls-row">
+      <label class="grow">Search <input id="q" type="search" placeholder="Protocol, category or chain…" autocomplete="off"></label>
+      <label>Category <select id="category"></select></label>
+      <label>Chain <select id="chain"></select></label>
+      <label>Min TVL <select id="min-tvl">
+        <option value="0">Any</option>
+        <option value="50000000">$50M+</option>
+        <option value="100000000">$100M+</option>
+        <option value="500000000">$500M+</option>
+        <option value="1000000000">$1B+</option>
+      </select></label>
+      <label>Sort by <select id="sort">
+        <option value="implied">Implied value</option>
+        <option value="tvl">TVL</option>
+        <option value="growth">7-day change</option>
+        <option value="age">Age with no token</option>
+        <option value="name">Name A–Z</option>
+      </select></label>
+    </div>
+    <nav class="tabs" aria-label="Board views">
+      <button type="button" data-tab="board" class="active">Pre-token board</button>
+      <button type="button" data-tab="live">Live tokens</button>
+      <button type="button" data-tab="setaside">Set aside</button>
+    </nav>
+    <p class="count" id="count-line"></p>
+  </section>
+
+  <section class="panel table-wrap" id="view-board">
+    <table>
+      <thead><tr>
+        <th class="num">#</th><th>Protocol</th><th>Category</th><th>Chains</th>
+        <th class="num">TVL</th><th class="num">7-day</th><th class="num">Age</th>
+        <th class="num">Implied value</th><th></th>
+      </tr></thead>
+      <tbody id="board-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel table-wrap hidden" id="view-live">
+    <p class="view-note">Tokens that already trade, for comparison. Their market cap over TVL is what a pre-token protocol's token would be measured against — most live tokens sit well below 1× TVL, which is why the radar's multiples fall as TVL grows.</p>
+    <table>
+      <thead><tr>
+        <th class="num">#</th><th>Protocol</th><th>Category</th><th>Chains</th>
+        <th class="num">TVL</th><th class="num">Market cap</th><th class="num">MCap / TVL</th><th class="num">7-day</th>
+      </tr></thead>
+      <tbody id="live-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel hidden" id="view-setaside">
+    <p class="view-note">Protocols the board deliberately does not rank, with the reason each one was set aside. Hiding them would be easier; showing them is the honest version.</p>
+    <h3>Pre-token, set aside</h3>
+    <table>
+      <thead><tr><th>Protocol</th><th>Category</th><th class="num">TVL</th><th>Reason set aside</th></tr></thead>
+      <tbody id="setaside-pre-body"></tbody>
+    </table>
+    <h3>Token already recorded</h3>
+    <table>
+      <thead><tr><th>Protocol</th><th>Category</th><th class="num">TVL</th><th>Reason set aside</th></tr></thead>
+      <tbody id="setaside-gecko-body"></tbody>
+    </table>
+  </section>
+
+  <dialog id="detail" class="detail" tabindex="-1">
+    <div id="detail-content"></div>
+    <form method="dialog" class="detail-close"><button type="submit">Close</button></form>
+  </dialog>
+</main>
+
+<footer>
+  <p>Built from one sealed snapshot of the protocol universe. No prices are fetched live; no names are hardcoded — the same rules rank whatever the snapshot holds. Farm plans never promise an airdrop: they say what to do, what it costs, and how long to keep at it. This is not financial advice.</p>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
